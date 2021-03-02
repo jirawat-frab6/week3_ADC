@@ -46,6 +46,10 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
+uint16_t ADCMode = 0,buttonclk[2] = { 0 };
+double ADCOutputConverted = 0;
+double Vcc = 3.3;
+
 typedef struct {
 	ADC_ChannelConfTypeDef config;
 	uint32_t data;
@@ -53,8 +57,6 @@ typedef struct {
 }ADCStructure;
 
 ADCStructure ADCChannel[2] = { 0 };
-uint16_t ADCMode = 0,buttonclk[2] = { 0 };
-uint32_t ADCOutputConverted = 0;
 
 /* USER CODE END PV */
 
@@ -65,8 +67,10 @@ static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
 
-void ADCPollingMethodInit();
-void ADCPollingMethodUpdate();
+void ADCPollingMethodInit(void);
+void ADCPollingMethodUpdate(void);
+uint32_t analog_read_to_mv(uint32_t a_input);
+uint16_t analog_read_to_celcius(void);
 
 /* USER CODE END PFP */
 
@@ -122,8 +126,12 @@ int main(void)
 	  }
 	  buttonclk[1] = buttonclk[0];
 
-
-	  ADCOutputConverted = ADCChannel[ADCMode].data;
+	  if(!ADCMode){
+		  ADCOutputConverted = analog_read_to_mv(ADCChannel[0].data);
+	  }
+	  else{
+		  ADCOutputConverted = analog_read_to_celcius();
+	  }
 
     /* USER CODE END WHILE */
 
@@ -307,15 +315,21 @@ void ADCPollingMethodInit(){
 
 void ADCPollingMethodUpdate(){
 
-	for(int i = 0; i < 2; i++){
-		HAL_ADC_ConfigChannel(&hadc1, &ADCChannel[i].config);
-		HAL_ADC_Start(&hadc1);
-		if(HAL_ADC_PollForConversion(&hadc1, 10)){
-			ADCChannel[i].data = HAL_ADC_GetValue(&hadc1);
-		}
-		HAL_ADC_Stop(&hadc1);
+	HAL_ADC_ConfigChannel(&hadc1, &ADCChannel[ADCMode].config);
+	HAL_ADC_Start(&hadc1);
+	if(HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK){
+		ADCChannel[ADCMode].data = HAL_ADC_GetValue(&hadc1);
 	}
+	HAL_ADC_Stop(&hadc1);
 
+}
+
+uint32_t analog_read_to_mv(uint32_t a_input){
+	return (uint32_t)((a_input*Vcc)/(double)(1<<12)*1000);
+}
+
+uint16_t analog_read_to_celcius(){
+	return (uint16_t)((((analog_read_to_mv(ADCChannel[1].data))-(0.76*1000))/(2.5))+25);
 }
 
 /* USER CODE END 4 */
