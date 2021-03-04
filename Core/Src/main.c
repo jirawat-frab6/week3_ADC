@@ -47,7 +47,7 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 
 uint16_t ADCMode = 0,buttonclk[2] = { 0 };
-double ADCOutputConverted = 0;
+uint32_t ADCOutputConverted = 0;
 double Vcc = 3.3;
 
 typedef struct {
